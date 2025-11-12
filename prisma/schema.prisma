@@ -1,0 +1,1646 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model users {
+  id                         String                      @id @default(uuid())
+  first_name                 String                      @db.VarChar(100)
+  last_name                  String                      @default("") @db.VarChar(100)
+  email                      String                      @unique @db.VarChar(255)
+  phone                      String                      @db.VarChar(15)
+  password                   String?                     @db.VarChar(255)
+  auth_provider              auth_provider_enum          @default(local)
+  provider_id                String?                     @unique @db.VarChar(300)
+  gender                     gender_enum?
+  last_login                 DateTime?                   @db.Timestamptz(6)
+  created_at                 DateTime?                   @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime?                   @db.Timestamptz(6)
+  image                      String?                     @db.VarChar(300)
+  dob                        DateTime?
+  bio                        String?
+  deleted_at                 DateTime?                   @db.Timestamptz(6)
+  location                   String?                     @db.VarChar(150)
+  createdBy                  String?                     @db.VarChar(150)
+  updatedBy                  String?                     @db.VarChar(150)
+  timezone                   String                      @default("America/Los_Angeles") @db.VarChar(100)
+  social_handles             Json?                       @db.Json
+  total_credits              Int                         @default(0)
+  organization_id            String?
+  private_note               String?
+  activity_log               activity_log[]
+  assignment_submission      assignment_submission[]
+  attendance                 attendance[]
+  audios                     audios[]
+  certificates               certificates[]
+  sent_message               chat_message[]
+  comments                   comment[]
+  consultation               consultation[]
+  participants               conversation_participants[]
+  course_admins              course_admins[]
+  course_instructors         course_instructors[]
+  course_reviews             course_reviews[]
+  courses                    courses[]
+  credit_usages              credit_usages[]
+  debate_participants        debate_participants[]
+  debate_response            debate_response[]
+  engagement                 engagement[]
+  essay_submission           essay_submissions[]
+  events                     event[]                     @relation("EventCreator")
+  eventParticipant           event_participant[]
+  received_group_invitations group_invitations[]         @relation("GroupInvitesInvitee")
+  sent_group_invitations     group_invitations[]         @relation("GroupInvitesInviter")
+  groups                     group_member[]
+  group_messages_sent        group_message[]             @relation("UserMessages")
+  posts                      group_post[]
+  likes                      like[]
+  logs                       logs[]
+  notifications              notifications[]
+  orders                     orders[]
+  poll_votes                 poll_votes[]
+  eventReminder              reminder[]
+  scenario_attempts          scenario_attempts[]
+  subscriptions              subscriptions[]
+  support_tickets            support_ticket[]
+  texts                      texts[]
+  ticket_replies             ticket_reply[]
+  user_badges                user_badges[]
+  user_catalog_access        user_catalog_access[]
+  user_course_access         user_course_access[]
+  user_course_progress       user_course_progress[]
+  user_lesson_progress       user_lesson_progress[]
+  user_modules_access        user_module_access[]
+  user_module_progress       user_module_progress[]
+  quiz_attempts              user_quiz_attempts[]
+  user_roles                 user_roles[]
+  organizations              organizations?              @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  website_service            website_service[]
+
+  @@index([email])
+  @@index([last_login])
+}
+
+model user_roles {
+  user_id String
+  role    role_enum
+  user    users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, role])
+  @@index([user_id])
+  @@index([role])
+}
+
+model orders {
+  id                String         @id @default(uuid())
+  user_id           String
+  total_amount      Decimal        @db.Decimal(10, 2)
+  order_date        DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime       @default(now()) @db.Timestamptz(6)
+  payment_id        String?        @db.VarChar(150)
+  payment_method    String?        @db.VarChar(100)
+  credits_added     Int?
+  status            OrderStatus    @default(PENDING)
+  stripe_session_id String?        @db.VarChar(200)
+  type              OrderType
+  order_items       order_items[]
+  user              users          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  payments          payments[]
+  subscription      subscriptions?
+
+  @@index([user_id])
+  @@index([order_date])
+  @@index([type])
+}
+
+model order_items {
+  id         String    @id @default(uuid())
+  order_id   String
+  price      Decimal   @db.Decimal(10, 2)
+  catalog_id String?   @map("catalogId")
+  course_id  String?   @map("courseId")
+  createdBy  String?   @db.VarChar(150)
+  updatedBy  String?   @db.VarChar(150)
+  catalog    catalogs? @relation(fields: [catalog_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  course     courses?  @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  order      orders    @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([order_id])
+  @@index([course_id])
+  @@index([catalog_id])
+}
+
+model payments {
+  id                String         @id @default(uuid())
+  order_id          String
+  amount            Decimal        @db.Decimal(10, 2)
+  status            PaymentStatus
+  transaction_id    String?        @db.VarChar(100)
+  payment_method    String?        @db.VarChar(50)
+  payment_url       String?
+  gateway_response  Json?
+  created_at        DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime       @default(now()) @db.Timestamptz(6)
+  organization_id   String?
+  maverick_event_id String?        @db.VarChar(100)
+  order             orders         @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  organizations     organizations? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@index([order_id])
+  @@index([transaction_id])
+  @@index([maverick_event_id])
+}
+
+model course_instructors {
+  course_id String
+  user_id   String
+  isPrimary Boolean @default(false)
+  course    courses @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user      users   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([course_id, user_id])
+  @@index([course_id])
+  @@index([user_id])
+}
+
+model course_admins {
+  course_id String
+  user_id   String
+  course    courses @relation(fields: [course_id], references: [id], onDelete: Cascade)
+  user      users   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([course_id, user_id])
+  @@index([course_id])
+  @@index([user_id])
+}
+
+model catalogs {
+  id                  String                @id @default(uuid())
+  name                String                @unique @db.VarChar(100)
+  description         String?
+  thumbnail           String?               @db.VarChar(300)
+  created_at          DateTime?             @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime?             @default(now()) @db.Timestamptz(6)
+  createdBy           String?               @db.VarChar(150)
+  updatedBy           String?               @db.VarChar(150)
+  category            CatalogCategory       @default(STARTER)
+  order               Int?
+  price               Decimal               @default(0.00) @db.Decimal(10, 2)
+  organization_id     String?
+  catalog_courses     catalog_courses[]
+  organizations       organizations?        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  order_items         order_items[]
+  user_catalog_access user_catalog_access[]
+
+  @@index([name])
+}
+
+model catalog_courses {
+  catalog_id String
+  course_id  String
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  catalog    catalogs  @relation(fields: [catalog_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  course     courses   @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([catalog_id, course_id])
+  @@index([catalog_id])
+  @@index([course_id])
+}
+
+model user_catalog_access {
+  id                 String       @id @default(uuid())
+  user_id            String
+  catalog_id         String
+  granted_by         GrantType    @default(MANUAL)
+  subscription_start DateTime?    @default(now()) @db.Timestamptz(6)
+  subscription_end   DateTime?    @db.Timestamptz(6)
+  status             AccessStatus @default(ACTIVE)
+  granted_on         DateTime?    @default(now()) @db.Timestamptz(6)
+  catalog            catalogs     @relation(fields: [catalog_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user               users        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id])
+  @@index([catalog_id])
+}
+
+model user_course_access {
+  user_id            String
+  course_id          String
+  granted_by         GrantType    @default(MANUAL)
+  subscription_start DateTime?    @default(now()) @db.Timestamptz(6)
+  subscription_end   DateTime?    @db.Timestamptz(6)
+  status             AccessStatus @default(ACTIVE)
+  granted_on         DateTime?    @default(now()) @db.Timestamptz(6)
+  isTrial            Boolean      @default(false)
+  course             courses      @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user               users        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, course_id])
+  @@index([user_id, status])
+  @@index([user_id])
+  @@index([course_id])
+}
+
+model courses {
+  id                   String                 @id @default(uuid())
+  title                String                 @db.VarChar(150)
+  description          String?
+  learning_objectives  String[]
+  isHidden             Boolean                @default(false)
+  course_status        ContentStatus          @default(DRAFT)
+  estimated_duration   String?
+  max_students         Int?
+  course_level         CourseLevel            @default(BEGINNER)
+  instructor_id        String?
+  courseType           CourseType             @default(SEQUENTIAL)
+  deleted_at           DateTime?              @db.Timestamptz(6)
+  lockModules          LockModules            @default(LOCKED)
+  price                Decimal                @default(0.00) @db.Decimal(10, 2)
+  requireFinalQuiz     Boolean                @default(true)
+  thumbnail            String?                @db.VarChar(300)
+  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  createdBy            String?                @db.VarChar(150)
+  updatedBy            String?                @db.VarChar(150)
+  organization_id      String?
+  catalog_courses      catalog_courses[]
+  certificates         certificates[]
+  chatbot_questions    chatbot_questions[]
+  course_admins        course_admins[]
+  course_instructors   course_instructors[]
+  reviews              course_reviews[]
+  instructor           users?                 @relation(fields: [instructor_id], references: [id], onUpdate: NoAction)
+  organizations        organizations?         @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  event                event[]
+  groups               groups[]
+  modules              modules[]
+  order_items          order_items[]
+  user_course_access   user_course_access[]
+  user_course_progress user_course_progress[]
+  user_module_access   user_module_access[]
+
+  @@index([instructor_id])
+  @@index([course_status])
+}
+
+model modules {
+  id                   String                 @id @default(uuid())
+  course_id            String
+  title                String                 @db.VarChar(150)
+  description          String?
+  order                Int
+  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  estimated_duration   Int?
+  module_status        ContentStatus          @default(DRAFT)
+  thumbnail            String?                @db.VarChar(300)
+  createdBy            String?                @db.VarChar(150)
+  updatedBy            String?                @db.VarChar(150)
+  price                Decimal                @default(0.00) @db.Decimal(10, 2)
+  assignment           assignments[]
+  debates              debates[]
+  essay                essays[]
+  lessons              lessons[]
+  course               courses                @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  quizzes              quizzes[]
+  resources            resource[]
+  scenarios            scenarios[]
+  user_module_access   user_module_access[]
+  user_module_progress user_module_progress[]
+
+  @@index([course_id])
+}
+
+model lessons {
+  id                 String                 @id @default(uuid())
+  title              String                 @db.VarChar(150)
+  description        String?
+  order              Int
+  created_at         DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?              @default(now()) @db.Timestamptz(6)
+  lesson_status      ContentStatus          @default(DRAFT)
+  createdBy          String?                @db.VarChar(150)
+  updatedBy          String?                @db.VarChar(150)
+  estimated_duration Int?
+  module_id          String
+  thumbnail          String?
+  chatbot_questions  chatbot_questions[]
+  lesson_contents    lesson_contents?
+  modules            modules                @relation(fields: [module_id], references: [id], onDelete: Cascade)
+  progress           user_lesson_progress[]
+}
+
+model resource {
+  id            String       @id @default(uuid())
+  group_id      String?
+  module_id     String?
+  uploaded_by   String
+  resource_type ResourceType
+  url           String       @db.VarChar(300)
+  description   String?
+  is_preview    Boolean      @default(false)
+  duration      Int?
+  file_size     Int?
+  created_at    DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime     @updatedAt @db.Timestamptz(6)
+  groups        groups?      @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  modules       modules?     @relation(fields: [module_id], references: [id], onDelete: Cascade)
+
+  @@index([group_id])
+  @@index([module_id])
+  @@index([resource_type])
+}
+
+model user_lesson_progress {
+  id            String    @id @default(uuid())
+  user_id       String
+  lesson_id     String
+  completed     Boolean   @default(false)
+  completed_at  DateTime?
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime? @default(now()) @db.Timestamptz(6)
+  progress      Int       @default(0)
+  last_accessed DateTime?
+  lesson        lessons   @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
+  user          users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([lesson_id])
+}
+
+model user_module_progress {
+  id            String    @id @default(uuid())
+  user_id       String
+  module_id     String
+  completed     Boolean   @default(false)
+  completed_at  DateTime?
+  last_accessed DateTime?
+  progress      Int       @default(0)
+  module        modules   @relation(fields: [module_id], references: [id], onDelete: Cascade)
+  user          users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([module_id])
+}
+
+model quizzes {
+  id            String               @id @default(uuid())
+  module_id     String
+  title         String               @db.VarChar(150)
+  type          QuizType             @default(GENERAL)
+  maxAttempts   Int?                 @default(3)
+  created_at    DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime?            @default(now()) @db.Timestamptz(6)
+  actions       Json?
+  max_score     Int                  @default(100)
+  min_score     Int                  @default(30)
+  time_estimate Int?
+  createdBy     String?              @db.VarChar(150)
+  updatedBy     String?              @db.VarChar(150)
+  questions     quiz_questions[]
+  module        modules              @relation(fields: [module_id], references: [id], onDelete: Cascade)
+  user_attempts user_quiz_attempts[]
+
+  @@index([module_id])
+}
+
+model quiz_questions {
+  id                String                    @id @default(uuid())
+  quiz_id           String
+  question          String
+  correct_answer    String
+  created_at        DateTime?                 @default(now()) @db.Timestamptz(6)
+  question_type     QuestionType              @default(MCQ)
+  createdBy         String?                   @db.VarChar(150)
+  updatedBy         String?                   @db.VarChar(150)
+  question_score    Int?                      @default(3)
+  options           Json?
+  question_options  question_options[]
+  question_response quiz_question_responses[]
+  quiz              quizzes                   @relation(fields: [quiz_id], references: [id], onDelete: Cascade)
+
+  @@index([quiz_id])
+}
+
+model user_quiz_attempts {
+  id            String                    @id @default(uuid())
+  user_id       String
+  quiz_id       String
+  score         Int
+  passed        Boolean
+  attempt_date  DateTime                  @default(now()) @db.Timestamptz(6)
+  remarks       String?
+  submitted_at  DateTime?
+  last_accessed DateTime?
+  status        AssessmentStatus
+  attempts      quiz_question_responses[]
+  quiz          quizzes                   @relation(fields: [quiz_id], references: [id], onDelete: Cascade)
+  user          users                     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([quiz_id])
+}
+
+model question_options {
+  id         String         @id @default(uuid())
+  questionId String
+  text       String         @db.VarChar(300)
+  matchWith  String?        @db.VarChar(300)
+  isCorrect  Boolean?
+  created_at DateTime?      @default(now()) @db.Timestamptz(6)
+  orderIndex Int?
+  category   String?        @db.VarChar(150)
+  isCategory Boolean?       @default(false)
+  question   quiz_questions @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
+
+model quiz_question_responses {
+  id         String             @id @default(uuid())
+  attemptId  String
+  questionId String
+  selected   Json
+  isCorrect  Boolean
+  created_at DateTime?          @default(now()) @db.Timestamptz(6)
+  attempt    user_quiz_attempts @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question   quiz_questions     @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId])
+  @@index([questionId])
+}
+
+model logs {
+  id          String   @id @default(uuid())
+  user_id     String?
+  action      String   @db.VarChar(100)
+  entity      String   @db.VarChar(50)
+  entity_id   String?  @db.VarChar(36)
+  details     Json?
+  ip_address  String?  @db.VarChar(45)
+  device_info String?  @db.VarChar(200)
+  timestamp   DateTime @default(now()) @db.Timestamptz(6)
+  user        users?   @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
+  @@index([action])
+  @@index([entity])
+  @@index([timestamp])
+}
+
+model chatbot_sections {
+  id         String              @id @default(uuid())
+  name       String              @unique @db.VarChar(100)
+  created_at DateTime?           @default(now()) @db.Timestamptz(6)
+  questions  chatbot_questions[]
+
+  @@index([name])
+}
+
+model chatbot_questions {
+  id         String           @id @default(uuid())
+  section_id String
+  question   String           @db.VarChar(300)
+  response   String           @db.VarChar(1000)
+  created_at DateTime?        @default(now()) @db.Timestamptz(6)
+  course_id  String?
+  lesson_id  String?
+  course     courses?         @relation(fields: [course_id], references: [id])
+  lesson     lessons?         @relation(fields: [lesson_id], references: [id])
+  section    chatbot_sections @relation(fields: [section_id], references: [id], onDelete: Cascade)
+
+  @@index([section_id])
+  @@index([course_id])
+  @@index([lesson_id])
+}
+
+model contactus {
+  id         String    @id @default(uuid())
+  first_name String    @db.VarChar(50)
+  last_name  String    @db.VarChar(50)
+  email      String    @db.VarChar(100)
+  message    String    @db.VarChar(300)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([email])
+}
+
+model course_reviews {
+  id         String   @id @default(uuid())
+  user_id    String
+  course_id  String
+  rating     Int
+  comment    String?  @db.VarChar(500)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  course     courses  @relation(fields: [course_id], references: [id], onDelete: Cascade)
+  user       users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([course_id])
+}
+
+model notifications {
+  id              String         @id @default(uuid())
+  user_id         String
+  type            String
+  title           String         @db.VarChar(150)
+  message         String         @db.VarChar(500)
+  read            Boolean        @default(false)
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime       @updatedAt @db.Timestamptz(6)
+  related_id      String?
+  related_type    String?
+  email_sent      Boolean        @default(false)
+  deleted_at      DateTime?      @db.Timestamptz(6)
+  organization_id String?
+  organizations   organizations? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  user            users          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([type])
+  @@index([related_type, related_id])
+}
+
+model chat_message {
+  id              String        @id @default(uuid())
+  sender_id       String
+  content         String
+  conversation_id String
+  createdAt       DateTime      @default(now()) @db.Timestamptz(6)
+  isRead          Boolean?      @default(false)
+  type            MessageType?  @default(TEXT)
+  conversation    conversations @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+  sender          users         @relation(fields: [sender_id], references: [id], onDelete: Cascade)
+}
+
+model conversations {
+  id           String                      @id @default(uuid())
+  createdAt    DateTime                    @default(now())
+  roomid       String
+  cov_messages chat_message[]
+  participants conversation_participants[]
+}
+
+model conversation_participants {
+  id              String        @id @default(uuid())
+  conversation_id String
+  user_id         String
+  joinedAt        DateTime      @default(now())
+  conversation    conversations @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+  user            users         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model assignments {
+  id           String                  @id @default(uuid())
+  title        String                  @db.VarChar(150)
+  description  String?
+  max_score    Int                     @default(100)
+  time_limit   Int
+  difficulty   Difficulty              @default(EASY)
+  instructions Json
+  created_by   String
+  updated_by   String
+  created_at   DateTime?               @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime?               @default(now()) @db.Timestamptz(6)
+  end_date     DateTime?
+  module_id    String
+  questions    assignment_questions[]
+  submissions  assignment_submission[]
+  module       modules                 @relation(fields: [module_id], references: [id])
+}
+
+model assignment_submission {
+  id               String        @id @default(uuid())
+  assignment_id    String
+  student_id       String
+  url              String        @db.VarChar(500)
+  additional_notes String?
+  submitted_at     DateTime      @default(now())
+  ontime           Boolean?
+  grading_status   GradingStatus @default(PENDING)
+  score            Int?
+  feedback         String?
+  last_accessed    DateTime?
+  assignment       assignments   @relation(fields: [assignment_id], references: [id])
+  student          users         @relation(fields: [student_id], references: [id])
+
+  @@unique([assignment_id, student_id])
+}
+
+model assignment_questions {
+  id            String      @id @default(uuid())
+  question_text String
+  points        Int
+  minimum_words Int?
+  maximum_words Int?
+  assignment_id String
+  assignment    assignments @relation(fields: [assignment_id], references: [id])
+}
+
+model groups {
+  id              String              @id @default(cuid())
+  name            String
+  description     String?
+  created_by      String
+  createdAt       DateTime            @default(now())
+  createdBy       String?             @db.VarChar(150)
+  updatedBy       String?             @db.VarChar(150)
+  course_id       String?
+  group_type      GroupType           @default(UNIVERSAL)
+  thumbnail       String?             @db.VarChar(300)
+  organization_id String?
+  events          event[]
+  invitations     group_invitations[]
+  members         group_member[]
+  messages        group_message[]
+  post            group_post[]
+  course          courses?            @relation(fields: [course_id], references: [id])
+  organizations   organizations?      @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  resources       resource[]
+}
+
+model group_member {
+  id        String    @id @default(cuid())
+  user_id   String
+  group_id  String
+  role      GroupRole @default(LEARNER)
+  joined_at DateTime  @default(now())
+  group     groups    @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  user      users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, group_id])
+}
+
+model group_post {
+  id        String    @id @default(cuid())
+  group_id  String
+  user_id   String
+  type      PostType  @default(POST)
+  title     String?
+  content   String
+  media_url String?
+  is_pinned Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  comments  comment[]
+  group     groups    @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  user      users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  likes     like[]
+}
+
+model comment {
+  id        String     @id @default(cuid())
+  post_id   String
+  user_id   String
+  content   String
+  createdAt DateTime   @default(now())
+  post      group_post @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  user      users      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model like {
+  id        String     @id @default(cuid())
+  post_id   String
+  user_id   String
+  createdAt DateTime   @default(now())
+  post      group_post @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  user      users      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([post_id, user_id])
+}
+
+model group_message {
+  id                  String         @id @default(cuid())
+  group_id            String
+  sender_id           String
+  content             String
+  type                MessageType    @default(TEXT)
+  mime_type           String?
+  is_pinned           Boolean        @default(false)
+  timeStamp           DateTime       @default(now())
+  poll_allow_multiple Boolean        @default(false)
+  poll_expires_at     DateTime?
+  poll_is_anonymous   Boolean        @default(false)
+  poll_question       String?
+  group               groups         @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  sender              users          @relation("UserMessages", fields: [sender_id], references: [id], onDelete: Cascade)
+  poll_options        poll_options[]
+  poll_votes          poll_votes[]
+}
+
+model debates {
+  id           String                @id @default(uuid())
+  module_id    String
+  title        String
+  statement    String
+  instruction  Json?
+  status       String                @default("DRAFT")
+  created_at   DateTime?             @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime?             @default(now()) @db.Timestamptz(6)
+  createdBy    String?               @db.VarChar(150)
+  updatedBy    String?               @db.VarChar(150)
+  deleted_at   DateTime?
+  start_date   DateTime?
+  end_date     DateTime?
+  total_marks  Int
+  participants debate_participants[]
+  statements   debate_response[]
+  module       modules               @relation(fields: [module_id], references: [id], onDelete: Cascade)
+
+  @@index([module_id])
+  @@index([status])
+}
+
+model debate_response {
+  id         String       @id @default(uuid())
+  debate_id  String
+  text       String
+  user_id    String
+  marks      Int?
+  feedback   String?
+  created_at DateTime?    @default(now()) @db.Timestamptz(6)
+  updated_at DateTime?    @default(now()) @db.Timestamptz(6)
+  debate     debates      @relation(fields: [debate_id], references: [id], onDelete: Cascade)
+  user       users        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  engagement engagement[]
+
+  @@index([debate_id])
+}
+
+model debate_participants {
+  id            String      @id @default(uuid())
+  debate_id     String
+  user_id       String
+  group         DebateGroup
+  joined_at     DateTime?   @default(now())
+  submitted_at  DateTime?
+  last_accessed DateTime?
+  debate        debates     @relation(fields: [debate_id], references: [id], onDelete: Cascade)
+  user          users       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([debate_id, user_id])
+  @@index([debate_id])
+  @@index([user_id])
+  @@index([group])
+}
+
+model engagement {
+  id         String          @id @default(uuid())
+  res_id     String
+  user_id    String
+  type       EngagementType
+  created_at DateTime?       @default(now()) @db.Timestamptz(6)
+  response   debate_response @relation(fields: [res_id], references: [id], onDelete: Cascade)
+  user       users           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([res_id, user_id])
+  @@index([res_id])
+  @@index([user_id])
+  @@index([type])
+}
+
+model event {
+  id                   String                 @id @default(cuid())
+  title                String
+  description          String?
+  startTime            DateTime
+  endTime              DateTime
+  location             String?
+  isRecurring          Boolean                @default(false)
+  calendarType         CalendarType?
+  visibility           Visibility             @default(PRIVATE)
+  creatorId            String
+  updatedBy            String?                @db.VarChar(150)
+  groupId              String?
+  course_id            String?
+  organization_id      String?
+  attendance           attendance[]
+  course               courses?               @relation(fields: [course_id], references: [id])
+  creator              users                  @relation("EventCreator", fields: [creatorId], references: [id])
+  group                groups?                @relation(fields: [groupId], references: [id])
+  organizations        organizations?         @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  participants         event_participant[]
+  recurrenceExceptions recurrence_exception[]
+  recurrenceRule       recurrence_rule?
+  reminder             reminder[]
+}
+
+model recurrence_rule {
+  id        String    @id @default(cuid())
+  eventId   String    @unique
+  frequency Frequency
+  interval  Int       @default(1)
+  byDay     String?
+  endDate   DateTime?
+  count     Int?
+  event     event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model event_participant {
+  id      String          @id @default(cuid())
+  eventId String
+  userId  String
+  role    ParticipantRole @default(VIEWER)
+  event   event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user    users           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+}
+
+model reminder {
+  id          String         @id @default(cuid())
+  eventId     String
+  userId      String?
+  triggerTime DateTime
+  method      ReminderMethod
+  event       event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user        users?         @relation(fields: [userId], references: [id])
+}
+
+model essays {
+  id            String              @id @default(uuid())
+  title         String              @db.VarChar(150)
+  description   String              @db.VarChar(400)
+  max_points    Int
+  time_limit    Int
+  word_limit    Int
+  difficulty    Difficulty          @default(EASY)
+  essay_topic   String              @db.VarChar(400)
+  passing_score Int                 @default(50)
+  instructions  Json
+  created_at    DateTime?           @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime?           @default(now()) @db.Timestamptz(6)
+  end_date      DateTime?
+  created_by    String
+  updated_by    String
+  module_id     String
+  submission    essay_submissions[]
+  module        modules             @relation(fields: [module_id], references: [id])
+}
+
+model essay_submissions {
+  id             String        @id @default(uuid())
+  text           String
+  essay_id       String
+  student_id     String
+  submitted_at   DateTime      @default(now())
+  ontime         Boolean?
+  time_spent     Int
+  word_count     Int
+  grading_status GradingStatus @default(PENDING)
+  score          Int?
+  feedback       String?
+  last_accessed  DateTime?
+  essay          essays        @relation(fields: [essay_id], references: [id])
+  student        users         @relation(fields: [student_id], references: [id])
+
+  @@unique([essay_id, student_id])
+}
+
+model support_ticket {
+  id              String         @id @default(uuid())
+  student_id      String
+  category        TicketCategory
+  priority        TicketPriority
+  subject         String
+  description     String
+  attachments     String?
+  status          TicketStatus   @default(PENDING)
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime       @updatedAt @db.Timestamptz(6)
+  organization_id String?
+  organizations   organizations? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  student         users          @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  replies         ticket_reply[]
+
+  @@index([student_id])
+  @@index([status])
+}
+
+model ticket_reply {
+  id         String         @id @default(uuid())
+  ticket_id  String
+  sender_id  String
+  message    String
+  created_at DateTime       @default(now()) @db.Timestamptz(6)
+  sender     users          @relation(fields: [sender_id], references: [id], onDelete: Cascade)
+  ticket     support_ticket @relation(fields: [ticket_id], references: [id], onDelete: Cascade)
+
+  @@index([ticket_id])
+  @@index([sender_id])
+}
+
+model certificates {
+  id             String   @id @default(uuid())
+  user_id        String
+  course_id      String
+  issued_at      DateTime @default(now())
+  certificateUrl String
+  uniqueCode     String   @unique
+  isActive       Boolean  @default(true)
+  createdBy      String?  @db.VarChar(150)
+  updatedBy      String?  @db.VarChar(150)
+  course         courses  @relation(fields: [course_id], references: [id])
+  user           users    @relation(fields: [user_id], references: [id])
+
+  @@unique([user_id, course_id])
+}
+
+model badges {
+  id          String            @id @default(uuid())
+  title       String            @db.VarChar(150)
+  criteria    String
+  icon        String
+  createdBy   String?           @db.VarChar(150)
+  updatedBy   String?           @db.VarChar(150)
+  category    BadgeCategoryEnum
+  user_badges user_badges[]
+}
+
+model user_badges {
+  id         String   @id @default(uuid())
+  badge_id   String
+  user_id    String
+  issue_date DateTime @default(now())
+  createdBy  String?  @db.VarChar(150)
+  updatedBy  String?  @db.VarChar(150)
+  badge      badges   @relation(fields: [badge_id], references: [id], onDelete: Cascade)
+  user       users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+model activity_log {
+  id        String         @id @default(uuid())
+  userId    String
+  action    ActivityAction
+  targetId  String?
+  createdAt DateTime       @default(now())
+  user      users          @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model lesson_contents {
+  id         String   @id @default(uuid())
+  lesson_id  String   @unique
+  content    Json
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  scorm_url  String?
+  lesson     lessons  @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
+}
+
+model user_course_progress {
+  id            String    @id @default(uuid())
+  user_id       String
+  course_id     String
+  progress      Int       @default(0)
+  completed     Boolean   @default(false)
+  completed_at  DateTime?
+  time_spent    Int?
+  last_accessed DateTime?
+  updated_at    DateTime  @updatedAt
+  created_at    DateTime  @default(now())
+  course        courses   @relation(fields: [course_id], references: [id], onDelete: Cascade)
+  user          users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, course_id])
+  @@index([user_id])
+  @@index([course_id])
+}
+
+model recurrence_exception {
+  id              String   @id @default(cuid())
+  eventId         String
+  occurrence_date DateTime
+  createdAt       DateTime @default(now())
+  UpdatedBy       String?
+  event           event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, occurrence_date])
+}
+
+model refresh_token {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  expiresAt DateTime
+
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+model assets {
+  id              String         @id @default(uuid())
+  title           String
+  description     String?
+  category_id     String
+  uploaded_by     String?
+  url             String
+  file_size       Int?
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime       @updatedAt @db.Timestamptz(6)
+  file_type       FileType
+  organization_id String?
+  category        asset_category @relation(fields: [category_id], references: [id], onDelete: Cascade)
+  organizations   organizations? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+}
+
+model asset_category {
+  id              String         @id @default(uuid())
+  name            String
+  created_by      String?
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  organization_id String?
+  organization    organizations? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  asset           assets[]
+}
+
+model user_module_access {
+  user_id            String
+  course_id          String
+  module_id          String
+  module_order       Int
+  granted_by         GrantType    @default(MANUAL)
+  subscription_start DateTime?    @default(now()) @db.Timestamptz(6)
+  subscription_end   DateTime?    @db.Timestamptz(6)
+  status             AccessStatus @default(ACTIVE)
+  granted_on         DateTime?    @default(now()) @db.Timestamptz(6)
+  course             courses      @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  module             modules      @relation(fields: [module_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user               users        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, module_id])
+  @@index([user_id, status])
+  @@index([user_id])
+  @@index([course_id])
+}
+
+model subscriptions {
+  id                     String             @id @default(uuid())
+  user_id                String
+  order_id               String?            @unique
+  status                 SubscriptionStatus @default(ACTIVE)
+  plan_type              String
+  start_date             DateTime           @default(now()) @db.Timestamptz(6)
+  next_billing           DateTime?
+  canceled_at            DateTime?          @db.Timestamptz(6)
+  stripe_subscription_id String?            @db.VarChar(200)
+  organization_id        String?
+  order                  orders?            @relation(fields: [order_id], references: [id])
+  organizations          organizations?     @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  user                   users              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([status])
+  @@index([order_id])
+}
+
+model credit_usages {
+  id            String     @id @default(uuid())
+  user_id       String
+  credits_spent Int
+  unlock_type   UnlockType
+  unlock_id     String
+  used_at       DateTime   @default(now()) @db.Timestamptz(6)
+  user          users      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([unlock_type, unlock_id])
+}
+
+model scenarios {
+  id             String               @id @default(uuid())
+  title          String               @db.VarChar(150)
+  description    String?
+  max_attempts   Int                  @default(1)
+  avatar_url     String?              @db.VarChar(255)
+  background_url String?              @db.VarChar(255)
+  created_at     DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime?            @default(now()) @db.Timestamptz(6)
+  module_id      String
+  attempts       scenario_attempts[]
+  decisions      scenario_decisions[]
+  module         modules              @relation(fields: [module_id], references: [id], onDelete: Cascade)
+
+  @@index([module_id])
+}
+
+model scenario_decisions {
+  id            String               @id @default(uuid())
+  scenario_id   String
+  description   String
+  decisionOrder Int?
+  created_at    DateTime             @default(now()) @db.Timestamptz(6)
+  choices       scenario_choices[]   @relation("DecisionChoices")
+  nextChoices   scenario_choices[]   @relation("NextDecision")
+  scenario      scenarios            @relation(fields: [scenario_id], references: [id], onDelete: Cascade)
+  responses     scenario_responses[] @relation("DecisionResponses")
+
+  @@index([scenario_id])
+}
+
+model scenario_choices {
+  id               String               @id @default(uuid())
+  decision_id      String
+  text             String               @db.VarChar(300)
+  branch_type      BranchType
+  points           Int                  @default(0)
+  feedback         String?
+  next_action      NextAction
+  next_decision_id String?
+  created_at       DateTime             @default(now()) @db.Timestamptz(6)
+  decision         scenario_decisions   @relation("DecisionChoices", fields: [decision_id], references: [id], onDelete: Cascade)
+  nextDecision     scenario_decisions?  @relation("NextDecision", fields: [next_decision_id], references: [id], onDelete: Cascade)
+  responses        scenario_responses[]
+
+  @@index([decision_id])
+  @@index([next_decision_id])
+}
+
+model scenario_attempts {
+  id           String               @id @default(uuid())
+  scenario_id  String
+  user_id      String
+  status       AttemptStatus        @default(IN_PROGRESS)
+  score        Int                  @default(0)
+  attempt_no   Int                  @default(1)
+  started_at   DateTime             @default(now()) @db.Timestamptz(6)
+  completed_at DateTime?
+  scenario     scenarios            @relation(fields: [scenario_id], references: [id], onDelete: Cascade)
+  user         users                @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  responses    scenario_responses[]
+
+  @@index([scenario_id])
+  @@index([user_id])
+}
+
+model scenario_responses {
+  id             String             @id @default(uuid())
+  attempt_id     String
+  decision_id    String
+  choice_id      String
+  points_awarded Int                @default(0)
+  created_at     DateTime           @default(now()) @db.Timestamptz(6)
+  attempt        scenario_attempts  @relation(fields: [attempt_id], references: [id], onDelete: Cascade)
+  choice         scenario_choices   @relation(fields: [choice_id], references: [id], onDelete: Cascade)
+  decision       scenario_decisions @relation("DecisionResponses", fields: [decision_id], references: [id], onDelete: Cascade)
+
+  @@index([attempt_id])
+  @@index([decision_id])
+  @@index([choice_id])
+}
+
+model group_invitations {
+  id         String           @id @default(cuid())
+  group_id   String
+  inviter_id String
+  invitee_id String
+  token      String           @unique
+  status     InvitationStatus @default(PENDING)
+  expires_at DateTime?
+  createdAt  DateTime         @default(now())
+  group      groups           @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  invitee    users            @relation("GroupInvitesInvitee", fields: [invitee_id], references: [id], onDelete: Cascade)
+  inviter    users            @relation("GroupInvitesInviter", fields: [inviter_id], references: [id], onDelete: Cascade)
+
+  @@index([group_id])
+  @@index([invitee_id, status])
+}
+
+model credit_pricing {
+  id              String            @id @default(uuid())
+  unlock_type     UnlockType
+  service_key     ServiceType
+  credits         Int
+  created_at      DateTime          @default(now())
+  updated_at      DateTime          @updatedAt
+  consultations   consultation[]
+  websiteServices website_service[]
+
+  @@unique([unlock_type, service_key])
+}
+
+model consultation {
+  id           String         @id @default(uuid())
+  user_id      String
+  scheduled_at DateTime
+  status       String
+  pricing_id   String
+  created_at   DateTime       @default(now())
+  pricing      credit_pricing @relation(fields: [pricing_id], references: [id])
+  user         users          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model website_service {
+  id         String         @id @default(uuid())
+  user_id    String
+  status     String
+  pricing_id String
+  created_at DateTime       @default(now())
+  pricing    credit_pricing @relation(fields: [pricing_id], references: [id])
+  user       users          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model poll_options {
+  id          String        @id @default(cuid())
+  message_id  String
+  option_text String
+  createdAt   DateTime      @default(now())
+  message     group_message @relation(fields: [message_id], references: [id], onDelete: Cascade)
+  votes       poll_votes[]
+}
+
+model poll_votes {
+  id         String        @id @default(cuid())
+  message_id String
+  option_id  String
+  user_id    String
+  voted_at   DateTime      @default(now())
+  message    group_message @relation(fields: [message_id], references: [id], onDelete: Cascade)
+  option     poll_options  @relation(fields: [option_id], references: [id], onDelete: Cascade)
+  user       users         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([message_id, user_id, option_id])
+}
+
+model organizations {
+  id               String           @id @default(uuid())
+  name             String
+  description      String?
+  created_by       String?
+  created_at       DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime         @updatedAt @db.Timestamptz(6)
+  annual_price     Decimal?         @db.Decimal(10, 2)
+  credit           Int              @default(1000)
+  logo_url         String?          @db.VarChar(300)
+  monthly_price    Decimal?         @db.Decimal(10, 2)
+  status           OrgStatus        @default(ACTIVE)
+  storage_limit    BigInt?
+  user_limit       Int?
+  asset_categories asset_category[]
+  assets           assets[]
+  catalogs         catalogs[]
+  courses          courses[]
+  events           event[]
+  groups           groups[]
+  notifications    notifications[]
+  payments         payments[]
+  subscriptions    subscriptions[]
+  tickets          support_ticket[]
+  users            users[]
+}
+
+model texts {
+  id        String   @id @default(uuid())
+  user_id   String
+  content   String?
+  file_url  String?
+  file_type String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  audios    audios[]
+  user      users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model audios {
+  id        String   @id @default(uuid())
+  text_id   String
+  user_id   String
+  file_url  String
+  voice     String
+  language  String
+  speed     Float    @default(1.0)
+  pitch     Float    @default(0.0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  text      texts    @relation(fields: [text_id], references: [id], onDelete: Cascade)
+  user      users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model webhook_events {
+  id           String    @id @default(uuid())
+  evt_id       String    @unique
+  type         String
+  raw_payload  Json
+  signature    String?
+  processed_at DateTime?
+  created_at   DateTime  @default(now())
+}
+
+model attendance {
+  id         String   @id @default(uuid())
+  isPresent  Boolean  @default(true)
+  event_id   String
+  user_id    String
+  created_at DateTime @default(now())
+  event      event    @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  user       users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+
+enum auth_provider_enum {
+  local
+  google
+}
+
+enum gender_enum {
+  male
+  female
+  other
+}
+
+enum role_enum {
+  user
+  admin
+  instructor
+  super_admin
+}
+
+enum ResourceType {
+  VIDEO
+  PDF
+  TRANSCRIPT
+  AUDIO
+  LINK
+  IMAGE
+  TEXT
+  SCORM
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  FAILED
+  NOT_ATTEMPTED
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AccessStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum GrantType {
+  MANUAL
+  PAYMENT
+  PROMOTION
+}
+
+enum CourseType {
+  SEQUENTIAL
+  OPEN
+}
+
+enum LockModules {
+  LOCKED
+  UNLOCKED
+}
+
+enum QuizType {
+  GENERAL
+  FINAL
+}
+
+enum QuestionType {
+  MCQ
+  SCQ
+  TRUE_FALSE
+  ONE_WORD
+  FILL_UPS
+  DESCRIPTIVE
+  MATCHING
+  SEQUENCE
+  CATEGORIZATION
+}
+
+enum AssessmentStatus {
+  PENDING
+  COMPLETED
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  FILE
+  POLL
+}
+
+enum GroupRole {
+  ADMIN
+  LEARNER
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum PostType {
+  POST
+  ANNOUNCEMENT
+}
+
+enum VoteType {
+  FOR
+  AGAINST
+  SUPPORT
+}
+
+enum EngagementType {
+  LIKE
+  DISLIKE
+}
+
+enum DebateGroup {
+  FOR
+  AGAINST
+}
+
+enum CalendarType {
+  PERSONAL
+  GROUP
+  COURSE
+}
+
+enum Visibility {
+  PRIVATE
+  SHARED
+  PUBLIC
+}
+
+enum Frequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum ParticipantRole {
+  HOST
+  EDITOR
+  VIEWER
+}
+
+enum ReminderMethod {
+  EMAIL
+  PUSH
+}
+
+enum GradingStatus {
+  GRADED
+  PENDING
+}
+
+enum TicketCategory {
+  TECHNICAL_SUPPORT
+  BILLING_PAYMENTS
+  ACCOUNT_ISSUES
+  COURSE_CONTENT
+  OTHER
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TicketStatus {
+  PENDING
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum PaymentStatus {
+  SUCCESS
+  FAILED
+  PENDING
+  CANCELLED
+  REFUNDED
+}
+
+enum ActivityAction {
+  USER_LOGIN
+  USER_LOGOUT
+  PROFILE_UPDATED
+  COURSE_COMPLETED
+  LESSON_OPENED
+  LESSON_COMPLETED
+  QUIZ_STARTED
+  QUIZ_COMPLETED
+  ASSIGNMENT_SUBMITTED
+  COMMENT_POSTED
+  DEBATE_PARTICIPATED
+  DEBATE_SUBMITTED
+  ESSAY_SUBMITTED
+  MESSAGE_SENT
+  CERTIFICATE_EARNED
+  BADGE_EARNED
+}
+
+enum BadgeCategoryEnum {
+  COMPLETION
+  EXCELLENCE
+  ONE_TIME
+  PARTICIPATION
+  CUSTOM
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCE
+}
+
+enum CatalogCategory {
+  STARTER
+  PREMIUM
+}
+
+enum GroupType {
+  UNIVERSAL
+  COURSE
+  PRIVATE
+}
+
+enum FileType {
+  IMAGE
+  VIDEO
+  AUDIO
+  TEXT_FILE
+  PDF
+}
+
+enum UnlockType {
+  COURSE
+  CATALOG
+  LESSON
+  CONSULTATION
+  WEBSITE_SERVICES
+}
+
+enum OrderType {
+  MEMBERSHIP
+  CREDIT_PURCHASE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  EXPIRED
+}
+
+enum BranchType {
+  SUCCESS
+  FAILURE
+  NEUTRAL
+}
+
+enum NextAction {
+  CONTINUE
+  END
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum ServiceType {
+  CONSULTATION
+  WEBSITE_NORMAL
+  WEBSITE_PREMIUM
+}
+
+enum OrgStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}

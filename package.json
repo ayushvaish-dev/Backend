@@ -1,0 +1,65 @@
+{
+  "name": "creditor_server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prisma:generate": "prisma generate",
+    "start": "nodemon ./src/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Creditors-Academy/creditor_server.git"
+  },
+  "keywords": [],
+  "author": "Mayank Arya",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Creditors-Academy/creditor_server/issues"
+  },
+  "homepage": "https://github.com/Creditors-Academy/creditor_server#readme",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.883.0",
+    "@aws-sdk/client-ses": "^3.893.0",
+    "@prisma/extension-accelerate": "^2.0.2",
+    "@sendgrid/mail": "^8.1.6",
+    "aws-sdk": "^2.1692.0",
+    "axios": "^1.8.4",
+    "bcryptjs": "^3.0.2",
+    "body-parser": "^2.2.0",
+    "cloudinary": "^1.21.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "express-fileupload": "^1.5.1",
+    "express-session": "^1.18.1",
+    "ioredis": "^5.6.0",
+    "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.11.0",
+    "multer": "^1.4.5-lts.1",
+    "multer-storage-cloudinary": "^4.0.0",
+    "node-cron": "^4.0.5",
+    "nodemailer": "^6.10.1",
+    "nodemon": "^3.1.9",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
+    "pg": "^8.14.0",
+    "redis": "^5.6.0",
+    "socket.io": "^4.8.1",
+    "stripe": "^18.5.0",
+    "unzipper": "^0.12.3",
+    "uuid": "^11.1.0",
+    "validator": "^13.15.0",
+    "xlsx": "^0.18.5",
+    "xml2js": "^0.6.2"
+  },
+  "devDependencies": {
+    "@prisma/client": "^6.13.0",
+    "i": "^0.3.7",
+    "npm": "^11.4.2",
+    "prisma": "^6.13.0"
+  }
+}
